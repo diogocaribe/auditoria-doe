@@ -156,6 +156,29 @@ with st.container():
             atos = get_atos(ids[i])
             if atos:
                 for j, ato in enumerate(atos, start=0):
+                    texto_ato = remover_hifen_lista(ato[0])
+                    # Verifica se o texto termina com alguma das assinaturas esperadas
+                    termina_corretamente = any(
+                        texto_ato.strip().endswith(assinatura) 
+                        for assinatura in [
+                            "Geral",
+                            "Geral.",
+                            "Diretor Geral",
+                            "Diretor Geral."
+                            "Diretora Geral",
+                            "Diretora Geral.",
+                            "Diretora Geral do INEMA",
+                            "Diretoria Geral",
+                            "Diretoria Geral.",
+                            "Secretário",
+                            "Presidente",
+                            "GOZO",
+                            "contrário."
+                        ]
+                    )
+                    
+                    background_color = "#f9f9f9" if termina_corretamente else "#fdd1d8"  # cor normal ou rosa claro
+                    
                     st.markdown(
                         f"""
                         <div 
@@ -163,15 +186,14 @@ with st.container():
                             padding:10px;
                             margin:10px 0;
                             text-align: justify;
-                            background-color:#f9f9f9;'>
-                        {remover_hifen_lista(ato[0])}
+                            background-color:{background_color};'>
+                        {texto_ato}
                         </div>
                         """,
                         unsafe_allow_html=True,
                     )
             else:
                 st.info("Nenhum conteúdo relacionado")
-
         with col_publicacao:
             st.markdown("##### PUBLICAÇÃO")
 
