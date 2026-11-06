@@ -9,6 +9,7 @@ services:
       - .:/auditoria-doe
     environment:
       - PYTHONUNBUFFERED=1
+      - HOST=postgres
     restart: unless-stopped
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8501/_stcore/health"]
