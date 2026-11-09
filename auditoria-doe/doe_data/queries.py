@@ -2,10 +2,20 @@ from sqlalchemy import text
 from doe_data.acesso_bd import get_engine
 import streamlit as st
 
-def get_publicacoes_auditoria_not_null():
-    query = text("SELECT link, id, conteudo_link, nro_edicao, dt_edicao FROM vw_publicacao WHERE auditoria is NULL ORDER BY id;")
+def get_publicacoes_por_auditoria(status):
+    """Retornar as publicações com o status de auditoria informado.
+
+    Args:
+        status: True para corretas, False para erradas e None para não avaliadas.
+    """
+    query = text("""
+                    SELECT link, id, conteudo_link, nro_edicao, dt_edicao
+                    FROM vw_publicacao
+                    WHERE auditoria IS NOT DISTINCT FROM CAST(:status AS boolean)
+                    ORDER BY id;
+                    """)
     with get_engine().connect() as conn:
-        result = conn.execute(query)
+        result = conn.execute(query, {"status": status})
         return result.fetchall()
 
 def get_qtd_publicacoes():

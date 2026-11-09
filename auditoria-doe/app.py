@@ -1,6 +1,6 @@
 import streamlit as st
 from doe_data.queries import (
-    get_publicacoes_auditoria_not_null,
+    get_publicacoes_por_auditoria,
     get_atos,
     update_publicacao_auditoria,
     get_qtd_publicacoes,
@@ -32,7 +32,25 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 
-publicacoes = get_publicacoes_auditoria_not_null()
+FILTROS_AUDITORIA = {"Não avaliadas": None, "Corretas": True, "Erradas": False}
+
+
+def reiniciar_navegacao():
+    st.session_state.index = 0
+
+
+# O seletor vem antes da consulta para que a lista já reflita a opção escolhida
+filtro_auditoria = st.radio(
+    "Visualizar publicações",
+    options=list(FILTROS_AUDITORIA),
+    key="filtro_auditoria",
+    horizontal=True,
+    on_change=reiniciar_navegacao,
+)
+status_auditoria = FILTROS_AUDITORIA[filtro_auditoria]
+somente_leitura = status_auditoria is not None
+
+publicacoes = get_publicacoes_por_auditoria(status_auditoria)
 links = [row[0] for row in publicacoes]
 ids = [row[1] for row in publicacoes]
 conteudos_link = [row[2] for row in publicacoes]
@@ -42,6 +60,9 @@ dt_edicao = [row[4] for row in publicacoes]
 
 if "index" not in st.session_state:
     st.session_state.index = 0
+
+# A fila encolhe conforme as publicações são avaliadas
+st.session_state.index = min(st.session_state.index, max(len(links) - 1, 0))
 
 qtd_publicacoes = get_qtd_publicacoes()
 qtd_publicacoes_correta = get_qtd_publicacoes_correta()
@@ -130,18 +151,28 @@ with st.container():
             # st.markdown("<div class='avaliacao-box'>", unsafe_allow_html=True)
             col4, col5 = st.columns([1, 1])
             i = st.session_state.index
+            publicacao_id = ids[i] if ids else None
 
+            # A gravação fica em on_click para rodar antes de o script recarregar
+            # a fila. O item avaliado sai da fila e o próximo assume o mesmo
+            # índice, por isso o índice não é incrementado aqui.
             with col4:
-                if st.button("✅ Correta", key="btn_correta"):
-                    update_publicacao_auditoria(ids[i], True)
-                    if st.session_state.index < len(links) - 1:
-                        st.session_state.index += 1
+                st.button(
+                    "✅ Correta",
+                    key="btn_correta",
+                    disabled=publicacao_id is None or somente_leitura,
+                    on_click=update_publicacao_auditoria,
+                    args=(publicacao_id, True),
+                )
 
             with col5:
-                if st.button("❌ Errada", key="btn_errada"):
-                    update_publicacao_auditoria(ids[i], False)
-                    if st.session_state.index < len(links) - 1:
-                        st.session_state.index += 1
+                st.button(
+                    "❌ Errada",
+                    key="btn_errada",
+                    disabled=publicacao_id is None or somente_leitura,
+                    on_click=update_publicacao_auditoria,
+                    args=(publicacao_id, False),
+                )
             st.markdown("</div>", unsafe_allow_html=True)
 
 
